@@ -30,11 +30,15 @@ class Enemy extends Entity {
     // Returns the desired next position {x, y} or null if skipping turn
     decideMove(player, grid) {
         if (this.type === 'boss' || this.isMiniBoss) {
-            this.turnCounter = (this.turnCounter || 0) + 1;
-            // "Heavy" mechanic: Move only on odd turns (1, 3, 5...)
-            // So skip if even
-            if (this.turnCounter % 2 === 0) {
-                return { x: this.x, y: this.y, skipped: true };
+            // Berserk Mechanic: If HP <= 50%, move every turn!
+            const isBerserk = this.hp <= (this.maxHp / 2);
+
+            if (!isBerserk) {
+                this.turnCounter = (this.turnCounter || 0) + 1;
+                // "Heavy" mechanic: Move only on odd turns (1, 3, 5...)
+                if (this.turnCounter % 2 === 0) {
+                    return { x: this.x, y: this.y, skipped: true };
+                }
             }
         }
 

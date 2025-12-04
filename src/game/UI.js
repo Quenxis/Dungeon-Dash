@@ -133,35 +133,52 @@ class UI {
         }
     }
 
+    log(msg, type = 'info') {
+        const logContainer = document.getElementById('combat-log');
+        if (!logContainer) return;
+
+        const entry = document.createElement('div');
+        entry.style.marginBottom = '4px';
+        entry.textContent = `> ${msg}`;
+
+        if (type === 'damage-dealt') entry.style.color = '#4cd137'; // Green
+        else if (type === 'damage-taken') entry.style.color = '#e84118'; // Red
+        else if (type === 'heal') entry.style.color = '#e1b12c'; // Yellow
+        else if (type === 'kill') entry.style.color = '#9c88ff'; // Purple
+        else entry.style.color = '#dcdde1'; // Grey/White
+
+        logContainer.appendChild(entry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
     showLegend() {
         this.isLegendShowing = true;
         const html = `
-            <h2>Enemy Legend</h2>
-            <div style="text-align: left; max-width: 300px; max-height: 400px; overflow-y: auto;">
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy goblin" style="position: relative; margin-right: 15px;"></div>
-                    <div><strong>Goblin</strong>: Chaser. Moves 1 tile.</div>
-                </div>
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy skeleton" style="position: relative; margin-right: 15px;"></div>
-                    <div><strong>Skeleton</strong>: Sniper. Shoots in straight lines.</div>
-                </div>
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy orc" style="position: relative; margin-right: 15px;"></div>
-                    <div><strong>Orc</strong>: Warrior. Moves in all 8 directions.</div>
-                </div>
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy cultist" style="position: relative; margin-right: 15px;"></div>
-                    <div><strong>Cultist</strong>: Mage. Shoots diagonally.</div>
-                </div>
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy slime" style="position: relative; margin-right: 15px;"></div>
-                    <div><strong>Slime</strong>: Blocker. High HP, doesn't attack, blocks path.</div>
-                </div>
-                <div style="margin-bottom: 15px; display: flex; align-items: center;">
-                    <div class="entity enemy boss" style="position: relative; margin-right: 15px; transform: scale(1.2);"></div>
-                    <div><strong>BOSS</strong>: Extremely dangerous!</div>
-                </div>
+            <h2>Game Legend</h2>
+            <div style="text-align: left; max-width: 500px; max-height: 500px; overflow-y: auto; padding-right: 10px;">
+                
+                <h3>Enemies</h3>
+                <div class="legend-row"><div class="entity enemy goblin legend-icon"></div> <strong>Goblin</strong>: Weak melee. Moves 1 tile.</div>
+                <div class="legend-row"><div class="entity enemy skeleton legend-icon"></div> <strong>Skeleton</strong>: Sniper. Shoots in straight lines.</div>
+                <div class="legend-row"><div class="entity enemy orc legend-icon"></div> <strong>Orc</strong>: Warrior. Moves in all 8 directions.</div>
+                <div class="legend-row"><div class="entity enemy cultist legend-icon"></div> <strong>Cultist</strong>: Mage. Shoots diagonally.</div>
+                <div class="legend-row"><div class="entity enemy slime legend-icon"></div> <strong>Slime</strong>: Blocker. High HP, blocks path.</div>
+                
+                <h3>Bosses</h3>
+                <div class="legend-row"><div class="entity enemy orc legend-icon" style="border:2px solid gold"></div> <strong>Elite Orc (Lvl 5)</strong>: Goes BERSERK (moves every turn) at 50% HP.</div>
+                <div class="legend-row"><div class="entity enemy boss legend-icon"></div> <strong>Dungeon Boss (Lvl 10)</strong>: Uses Shockwave if you kite him.</div>
+
+                <h3>Abilities</h3>
+                <div class="legend-row"><strong>💨 Dash</strong>: Teleport 2 tiles. Good for escaping or engaging.</div>
+                <div class="legend-row"><strong>🌀 Whirlwind</strong>: Hit ALL adjacent enemies.</div>
+                <div class="legend-row"><strong>💖 Heal</strong>: Restore HP instantly.</div>
+                <div class="legend-row"><strong>🔥 Fireball</strong>: Ranged attack (Range 3). High damage.</div>
+
+                <h3>Stats</h3>
+                <div class="legend-row"><strong>❤️ Max HP</strong>: Increases health pool.</div>
+                <div class="legend-row"><strong>⚔️ Damage</strong>: Increases base hit damage.</div>
+                <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
+                <div class="legend-row"><strong>🎯 Crit</strong>: Chance to deal triple damage.</div>
             </div>
             <button class="btn" onclick="window.game.ui.toggleLegend()">Close</button>
         `;

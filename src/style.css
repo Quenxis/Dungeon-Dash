@@ -59,9 +59,9 @@ body {
 
 #game-container {
     position: relative;
-    width: 434px;
+    width: 436px;
     /* 7 * 60 + 6 * 2 + border? Let's use grid gap */
-    height: 434px;
+    height: 436px;
     background-color: var(--grid-line);
     border: 2px solid var(--grid-line);
     border-radius: 4px;
@@ -251,3 +251,5 @@ body {
 .btn:hover {
     background-color: #16669e;
 }
+.legend-row { margin-bottom: 10px; display: flex; align-items: center; font-size: 0.9rem; }
+.legend-icon { position: relative; margin-right: 15px; flex-shrink: 0; }

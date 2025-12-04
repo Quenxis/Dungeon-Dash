@@ -34,6 +34,14 @@
         </div>
 
         <div id="main-layout" style="display: flex; gap: 20px;">
+            <div id="stats-panel"
+                style="width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                <h3 style="margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;">Your Stats</h3>
+                <div id="upgrade-list">
+                    <div style="color:#888; font-style:italic;">No upgrades yet</div>
+                </div>
+            </div>
+
             <div id="game-container">
                 <div id="grid"></div>
                 <!-- Overlay for Game Over / Level Complete -->
@@ -42,11 +50,12 @@
                 </div>
             </div>
 
-            <div id="stats-panel"
-                style="width: 200px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #333;">
-                <h3 style="margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;">Your Stats</h3>
-                <div id="upgrade-list">
-                    <div style="color:#888; font-style:italic;">No upgrades yet</div>
+            <div id="combat-log-panel"
+                style="width: 250px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #333; display: flex; flex-direction: column;">
+                <h3 style="margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;">Combat Log</h3>
+                <div id="combat-log"
+                    style="flex: 1; overflow-y: auto; font-family: monospace; font-size: 0.85rem; max-height: 350px;">
+                    <div style="color:#888; font-style:italic;">Battle started...</div>
                 </div>
             </div>
         </div>

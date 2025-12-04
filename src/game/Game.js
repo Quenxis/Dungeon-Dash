@@ -244,6 +244,17 @@ class Game {
         if (enemy.type === 'skeleton') color = '#e94560'; // Same as goblin/default
 
         el.style.background = `linear-gradient(to top, ${color} ${pct}%, #444 ${pct}%)`;
+
+        // Berserk Visuals
+        if ((enemy.type === 'boss' || enemy.isMiniBoss) && enemy.hp <= (enemy.maxHp / 2)) {
+            el.style.boxShadow = `0 0 15px red`;
+            el.style.borderColor = 'red';
+        } else if (enemy.isMiniBoss) {
+            el.style.boxShadow = `0 0 10px gold`; // Restore MiniBoss glow
+            el.style.borderColor = 'gold';
+        } else if (enemy.type === 'boss') {
+            el.style.boxShadow = `0 0 15px #f1c40f`; // Restore Boss glow
+        }
     }
 
     setupInput() {
@@ -405,6 +416,7 @@ class Game {
         const amount = 3 + bonus;
         this.player.heal(amount);
         this.ui.showMessage(`Healed ${amount} HP!`);
+        this.ui.log(`Player healed for ${amount} HP`, 'heal');
         this.completeAbility(ability);
     }
 
@@ -440,6 +452,7 @@ class Game {
                 const potion = this.potions[potionIndex];
                 this.player.heal(3);
                 this.ui.showMessage("Consumed Potion! (+3 HP)");
+                this.ui.log("Player consumed Potion (+3 HP)", 'heal');
                 if (potion.element) potion.element.remove();
                 this.potions.splice(potionIndex, 1);
                 this.ui.updateStats(this.player, this.level, this.score);
@@ -476,6 +489,7 @@ class Game {
             if (critRank > 0 && Math.random() < 0.2) {
                 dmg *= 3;
                 this.ui.showMessage("CRITICAL HIT!");
+                this.ui.log("CRITICAL HIT!", 'damage-dealt');
             }
             // First Strike
             const firstStrikeRank = attacker.getUpgradeRank('first_strike');
@@ -503,11 +517,13 @@ class Game {
         // Update Visuals
         if (defender.type !== 'player') {
             this.updateEnemyVisuals(defender, defender.element);
+            this.ui.log(`Player hit ${defender.type} for ${actualDmg} dmg`, 'damage-dealt');
         }
 
         // Play hit sound if defender is player
         if (defender.type === 'player') {
             this.sound.playHit();
+            this.ui.log(`${attacker.type} hit Player for ${actualDmg} dmg`, 'damage-taken');
         }
 
         // Thorns Logic (Rank based)
@@ -524,6 +540,7 @@ class Game {
 
         if (killed) {
             this.sound.playEnemyDeath();
+            this.ui.log(`${defender.type} died!`, 'kill');
             this.removeEntity(defender);
             if (attacker.type === 'player') {
                 this.score += 5;
@@ -557,9 +574,11 @@ class Game {
     processEnemyTurn() {
         if (this.state === 'GAME_OVER') return;
 
-        this.enemies.forEach(enemy => {
+        for (const enemy of this.enemies) {
+            if (this.state === 'GAME_OVER') break;
+
             // Check if dead (could have died from thorns)
-            if (enemy.hp <= 0) return;
+            if (enemy.hp <= 0) continue;
 
             // Skeleton Logic (Shooting)
             if (enemy.type === 'skeleton') {
@@ -567,7 +586,7 @@ class Game {
                     this.attack(enemy, this.player); // Use attack method for armor calc
                     this.sound.playHit();
                     this.ui.showMessage("Skeleton shot you!");
-                    return;
+                    continue;
                 }
             }
 
@@ -579,7 +598,42 @@ class Game {
                     this.attack(enemy, this.player);
                     this.sound.playHit();
                     this.ui.showMessage("Cultist zapped you!");
-                    return;
+                    continue;
+                }
+            }
+
+            // Boss Logic (Ranged Shockwave)
+            if (enemy.type === 'boss') {
+                const dist = Math.max(Math.abs(enemy.x - this.player.x), Math.abs(enemy.y - this.player.y));
+                // If not adjacent (range > 1) but within range 3
+                if (dist > 1 && dist <= 3) {
+                    // 40% chance to use Ranged Attack
+                    if (Math.random() < 0.4) {
+                        this.ui.showMessage("Boss used Shockwave!");
+                        this.sound.playAttack(); // Or a specific sound
+                        // Deal damage directly (ignore armor? No, keep it fair)
+                        this.attack(enemy, this.player);
+
+                        // Visual effect?
+                        const shockwave = document.createElement('div');
+                        shockwave.style.position = 'absolute';
+                        shockwave.style.left = (this.player.x * 62 + 10) + 'px';
+                        shockwave.style.top = (this.player.y * 62 + 10) + 'px';
+                        shockwave.style.width = '40px';
+                        shockwave.style.height = '40px';
+                        shockwave.style.border = '2px solid yellow';
+                        shockwave.style.borderRadius = '50%';
+                        shockwave.style.transition = 'transform 0.2s, opacity 0.2s';
+                        document.getElementById('game-container').appendChild(shockwave);
+
+                        setTimeout(() => {
+                            shockwave.style.transform = 'scale(1.5)';
+                            shockwave.style.opacity = '0';
+                            setTimeout(() => shockwave.remove(), 200);
+                        }, 10);
+
+                        continue; // Skip movement
+                    }
                 }
             }
 
@@ -592,7 +646,7 @@ class Game {
             } else if (move.x !== enemy.x || move.y !== enemy.y) {
                 enemy.setPosition(move.x, move.y);
             }
-        });
+        }
 
         if (this.state !== 'GAME_OVER') {
             this.player.tickCooldowns(); // Update cooldowns

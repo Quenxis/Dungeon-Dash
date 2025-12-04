@@ -26,25 +26,25 @@ class Entity {
     updateVisualPosition() {
         if (this.element) {
             // Grid size is 60px + 2px gap
-            const cellSize = 62; 
+            const cellSize = 62;
             // Center in cell (cell is 60x60, gap is 2)
             // Actually, we can just use top/left with calculation
             // The grid has 2px gap.
             // x=0 -> 0px
             // x=1 -> 62px
-            this.element.style.left = `${this.x * cellSize + 11}px`; // +11 to center (60-40)/2 + gap adjustment?
+            // this.element.style.left = `${this.x * cellSize + 11}px`; // Removed redundant line
             // Let's refine centering.
             // Cell is 60px. Entity is 30-40px.
             // Gap is 2px.
             // Offset = x * (60 + 2).
             // Centering offset = (60 - width) / 2.
-            
+
             let width = 40;
             if (this.type === 'goblin' || this.type === 'skeleton') width = 30;
             if (this.type === 'orc') width = 35;
-            
+
             const offset = (60 - width) / 2;
-            
+
             this.element.style.left = `${this.x * 62 + offset}px`;
             this.element.style.top = `${this.y * 62 + offset}px`;
         }
