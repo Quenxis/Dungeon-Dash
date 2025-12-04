@@ -194,18 +194,15 @@ class UI {
                 <div class="legend-row"><strong>🌀 Whirlwind</strong>: Hit ALL adjacent enemies.</div>
                 <div class="legend-row"><strong>💖 Heal</strong>: Restore HP instantly.</div>
                 <div class="legend-row"><strong>🔥 Fireball</strong>: Ranged attack (Range 3). High damage.</div>
+                <div class="legend-row"><strong>🛡️ Shield Bash</strong>: Knockback enemy 2 tiles. Bonus dmg if hits wall.</div>
 
                 <h3>Stats</h3>
                 <div class="legend-row"><strong>❤️ Max HP</strong>: Increases health pool.</div>
                 <div class="legend-row"><strong>⚔️ Damage</strong>: Increases base hit damage.</div>
                 <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
-                <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
                 <div class="legend-row"><strong>🎯 Crit</strong>: Chance to deal triple damage.</div>
                 <div class="legend-row"><strong>😡 Bloodlust</strong>: +Damage when HP is low.</div>
                 <div class="legend-row"><strong>💥 Chain Reaction</strong>: Enemies explode on death.</div>
-                
-                <h3>Active Abilities</h3>
-                <div class="legend-row"><strong>🛡️ Shield Bash</strong>: Knockback enemy 2 tiles. Bonus dmg if hits wall.</div>
             </div>
             <button class="btn" onclick="window.game.ui.toggleLegend()">Close</button>
         `;
