@@ -35,6 +35,9 @@ class Player extends Entity {
                 } else if (existing.id === 'heal') {
                     existing.bonus = (existing.bonus || 0) + 1;
                     existing.desc = `Active: Heal (3+${existing.bonus} HP)`;
+                } else if (existing.id === 'shield_bash') {
+                    existing.cooldown = Math.max(2, existing.cooldown - 1);
+                    existing.desc = `Active: Shield Bash (CD: ${existing.cooldown})`;
                 }
                 return;
             }
@@ -44,6 +47,7 @@ class Player extends Entity {
                 this.abilities.push({
                     id: upgrade.id,
                     name: upgrade.name,
+                    desc: upgrade.desc, // Fix: Copy description!
                     cooldown: upgrade.cooldown,
                     currentCooldown: 0,
                     icon: upgrade.icon,

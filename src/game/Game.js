@@ -18,7 +18,10 @@ class Game {
             { id: 'armor', name: '🛡️ Plated Armor', desc: 'Reduce incoming damage by 1/rank' },
             { id: 'crit', name: '🎯 Critical Strike', desc: '20% chance to deal 3x damage' },
             { id: 'first_strike', name: '⚡ First Strike', desc: '+2 damage to enemies with full HP' },
+            { id: 'bloodlust', name: '😡 Bloodlust', desc: '+1 Dmg for every 2 missing HP' },
+            { id: 'chain_reaction', name: '💥 Chain Reaction', desc: 'Enemies explode on death (2 dmg to neighbors)' },
             // Active Abilities
+            { id: 'shield_bash', name: '🛡️ Shield Bash', desc: 'Active: Knockback enemy 2 tiles (CD: 5)', type: 'active', cooldown: 5, icon: '🛡️' },
             { id: 'dash', name: '💨 Dash', desc: 'Active: Teleport to range 2 (CD: 5)', type: 'active', cooldown: 5, icon: '💨' },
             { id: 'whirlwind', name: '🌀 Whirlwind', desc: 'Active: Hit all adjacent enemies (CD: 6)', type: 'active', cooldown: 6, icon: '🌀' },
             { id: 'heal', name: '💖 Heal', desc: 'Active: Heal 3 HP (CD: 10)', type: 'active', cooldown: 10, icon: '💖' },
@@ -338,6 +341,9 @@ class Game {
             this.performWhirlwind(ability);
         } else if (ability.id === 'heal') {
             this.performHeal(ability);
+        } else if (ability.id === 'shield_bash') {
+            this.state = 'TARGETING';
+            this.ui.showMessage("Select adjacent enemy to Bash");
         }
     }
 
@@ -384,6 +390,22 @@ class Game {
                 this.completeAbility(ability);
             } else {
                 this.ui.showMessage("Invalid Fireball Target");
+            }
+        } else if (ability.id === 'shield_bash') {
+            if (this.isAdjacent(this.player.x, this.player.y, x, y)) {
+                const target = this.grid.getEntityAt(x, y);
+                if (target && target.type !== 'player') {
+                    this.sound.playAttack(); // Bash sound
+                    // Calculate direction
+                    const dx = x - this.player.x;
+                    const dy = y - this.player.y;
+                    this.applyKnockback(target, dx, dy, 2);
+                    this.completeAbility(ability);
+                } else {
+                    this.ui.showMessage("Must target an enemy!");
+                }
+            } else {
+                this.ui.showMessage("Target must be adjacent!");
             }
         }
     }
@@ -496,6 +518,18 @@ class Game {
             if (firstStrikeRank > 0 && defender.hp === (defender.maxHp || defender.hp)) {
                 dmg += 2;
             }
+            // Bloodlust
+            const bloodlustRank = attacker.getUpgradeRank('bloodlust');
+            if (bloodlustRank > 0) {
+                const missingHp = attacker.maxHp - attacker.hp;
+                if (missingHp > 0) {
+                    const bonus = Math.floor(missingHp / 2) * bloodlustRank; // +1 dmg per 2 missing HP per rank? Or just flat? Plan said +1 per 2 missing.
+                    if (bonus > 0) {
+                        dmg += bonus;
+                        // Visual cue?
+                    }
+                }
+            }
         }
 
         // Damage Calculation
@@ -548,6 +582,14 @@ class Game {
                 const healRank = attacker.getUpgradeRank('heal_kill');
                 if (healRank > 0) {
                     attacker.heal(healRank);
+                }
+            }
+
+            // Chain Reaction Logic
+            if (attacker.type === 'player') {
+                const chainRank = attacker.getUpgradeRank('chain_reaction');
+                if (chainRank > 0) {
+                    this.explodeEntity(defender, chainRank);
                 }
             }
         }
@@ -753,5 +795,101 @@ class Game {
             <p>Final Score: ${this.score}</p>
             <button class="btn" onclick="location.reload()">Play Again</button>
         `);
+    }
+
+    applyKnockback(target, dx, dy, distance) {
+        let currentX = target.x;
+        let currentY = target.y;
+        let hitWall = false;
+
+        for (let i = 0; i < distance; i++) {
+            const nextX = currentX + dx;
+            const nextY = currentY + dy;
+
+            if (this.grid.isValid(nextX, nextY) && !this.grid.isOccupied(nextX, nextY)) {
+                currentX = nextX;
+                currentY = nextY;
+            } else {
+                hitWall = true;
+                break;
+            }
+        }
+
+        // Move visual
+        if (currentX !== target.x || currentY !== target.y) {
+            target.setPosition(currentX, currentY);
+        }
+
+        // Wall slam damage
+        if (hitWall) {
+            const slamDmg = 2; // Flat damage for hitting wall
+            this.ui.showMessage("Slammed into wall!");
+            this.ui.log(`${target.type} slammed into wall for ${slamDmg} dmg`, 'damage-dealt');
+            target.takeDamage(slamDmg);
+            this.updateEnemyVisuals(target, target.element);
+            if (target.hp <= 0) {
+                this.sound.playEnemyDeath();
+                this.removeEntity(target);
+                this.score += 5;
+                // Chain reaction could trigger here too if we wanted, but let's keep it simple for now
+            }
+        }
+    }
+
+    explodeEntity(centerEntity, rank) {
+        const dmg = 2 * rank;
+        this.ui.log(`Chain Reaction! Explosion for ${dmg} dmg`, 'damage-dealt');
+
+        // Visual
+        const explosion = document.createElement('div');
+        explosion.style.position = 'absolute';
+        explosion.style.left = (centerEntity.x * 62) + 'px';
+        explosion.style.top = (centerEntity.y * 62) + 'px';
+        explosion.style.width = '180px'; // 3x3 area approx
+        explosion.style.height = '180px';
+        explosion.style.transform = 'translate(-60px, -60px)'; // Center it
+        explosion.style.background = 'radial-gradient(circle, rgba(255,69,0,0.8) 0%, rgba(255,0,0,0) 70%)';
+        explosion.style.pointerEvents = 'none';
+        explosion.style.zIndex = '10';
+        document.getElementById('game-container').appendChild(explosion);
+        setTimeout(() => explosion.remove(), 300);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                const tx = centerEntity.x + dx;
+                const ty = centerEntity.y + dy;
+
+                const target = this.grid.getEntityAt(tx, ty);
+                if (target && target.type !== 'player') {
+                    // Friendly Fire Check: Don't hurt the player!
+                    if (target.type === 'player') continue;
+
+                    target.takeDamage(dmg);
+                    this.updateEnemyVisuals(target, target.element);
+                    if (target.hp <= 0) {
+                        // Chain reaction? 
+                        // If we want recursive chain reactions, we call explodeEntity again.
+                        // But we need to be careful of infinite loops or stack overflow if logic is weird.
+                        // Let's allow 1 level of recursion? Or just let it happen naturally?
+                        // If we call removeEntity, it removes it from enemies list.
+                        // But we are iterating.
+                        // Let's just kill them. If they have chain reaction, it might trigger if we call attack?
+                        // But here we are just dealing damage.
+                        // If we want them to explode too, we need to check if *player* has the upgrade (which they do).
+                        // So yes, recursive explosions!
+
+                        this.sound.playEnemyDeath();
+                        this.removeEntity(target);
+                        this.score += 5;
+
+                        // Recursive explosion!
+                        // To avoid infinite instant loops, maybe delay it?
+                        // Or just let it rip. The entity is removed, so it won't be targeted again.
+                        setTimeout(() => this.explodeEntity(target, rank), 100);
+                    }
+                }
+            }
+        }
     }
 }

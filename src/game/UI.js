@@ -7,6 +7,18 @@ class UI {
         this.messageDisplay = document.getElementById('message-display');
         this.overlay = document.getElementById('overlay');
         this.overlayContent = document.getElementById('overlay-content');
+
+        // Tooltip setup
+        this.tooltip = document.createElement('div');
+        this.tooltip.className = 'tooltip';
+        document.body.appendChild(this.tooltip);
+
+        document.addEventListener('mousemove', (e) => {
+            if (this.tooltip.classList.contains('visible')) {
+                this.tooltip.style.left = (e.pageX + 15) + 'px';
+                this.tooltip.style.top = (e.pageY + 15) + 'px';
+            }
+        });
     }
 
     updateStats(player, level, score) {
@@ -35,6 +47,11 @@ class UI {
                 item.style.marginBottom = '5px';
                 item.style.fontSize = '0.9rem';
                 item.textContent = `${u.name.split(' ')[0]} ${u.name.substring(u.name.indexOf(' ') + 1)}${rank}`;
+
+                // Tooltip events
+                item.onmouseenter = () => this.showTooltip(u.desc);
+                item.onmouseleave = () => this.hideTooltip();
+
                 list.appendChild(item);
             });
         }
@@ -70,6 +87,10 @@ class UI {
             btn.style.alignItems = 'center';
             btn.style.cursor = 'pointer';
             btn.style.position = 'relative';
+
+            // Tooltip events
+            btn.onmouseenter = () => this.showTooltip(`${a.name}\n${a.desc}`);
+            btn.onmouseleave = () => this.hideTooltip();
 
             if (a.currentCooldown === 0) {
                 btn.style.borderColor = '#0f4c75';
@@ -178,7 +199,13 @@ class UI {
                 <div class="legend-row"><strong>❤️ Max HP</strong>: Increases health pool.</div>
                 <div class="legend-row"><strong>⚔️ Damage</strong>: Increases base hit damage.</div>
                 <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
+                <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
                 <div class="legend-row"><strong>🎯 Crit</strong>: Chance to deal triple damage.</div>
+                <div class="legend-row"><strong>😡 Bloodlust</strong>: +Damage when HP is low.</div>
+                <div class="legend-row"><strong>💥 Chain Reaction</strong>: Enemies explode on death.</div>
+                
+                <h3>Active Abilities</h3>
+                <div class="legend-row"><strong>🛡️ Shield Bash</strong>: Knockback enemy 2 tiles. Bonus dmg if hits wall.</div>
             </div>
             <button class="btn" onclick="window.game.ui.toggleLegend()">Close</button>
         `;
@@ -197,5 +224,15 @@ class UI {
 
     hideOverlay() {
         this.overlay.classList.add('hidden');
+    }
+
+    showTooltip(text) {
+        this.tooltip.textContent = text;
+        this.tooltip.style.whiteSpace = 'pre-line'; // Handle newlines
+        this.tooltip.classList.add('visible');
+    }
+
+    hideTooltip() {
+        this.tooltip.classList.remove('visible');
     }
 }

@@ -251,5 +251,37 @@ body {
 .btn:hover {
     background-color: #16669e;
 }
-.legend-row { margin-bottom: 10px; display: flex; align-items: center; font-size: 0.9rem; }
-.legend-icon { position: relative; margin-right: 15px; flex-shrink: 0; }
+
+.legend-row {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.legend-icon {
+    position: relative;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+/* Tooltip */
+.tooltip {
+    position: absolute;
+    background-color: rgba(20, 20, 30, 0.95);
+    border: 1px solid #444;
+    color: #eee;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    display: none;
+    /* Hidden by default */
+}
+
+.tooltip.visible {
+    display: block;
+}
