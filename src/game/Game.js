@@ -15,7 +15,7 @@ class Game {
             { id: 'thorns', name: '🌵 Thorns', desc: 'Enemies take 1 dmg/rank when hitting you' },
             { id: 'heal_kill', name: '🩸 Heal on Kill', desc: 'Heal 1 HP/rank when killing an enemy' },
             { id: 'double', name: '⚔️⚔️ Double Strike', desc: 'Attack twice (Rank increases chance/dmg)' },
-            { id: 'armor', name: '🛡️ Plated Armor', desc: 'Reduce incoming damage by 1/rank' },
+            { id: 'evasion', name: '👻 Evasion', desc: '10% chance to dodge attacks (Max 50%)' },
             { id: 'crit', name: '🎯 Critical Strike', desc: '20% chance to deal 3x damage' },
             { id: 'first_strike', name: '⚡ First Strike', desc: '+2 damage to enemies with full HP' },
             { id: 'bloodlust', name: '😡 Bloodlust', desc: '+1 Dmg for every 2 missing HP' },
@@ -535,13 +535,17 @@ class Game {
         // Damage Calculation
         let actualDmg = dmg;
 
-        // Armor Logic (Defender)
+        // Evasion Logic (Defender)
         if (defender.type === 'player') {
-            const armorRank = defender.getUpgradeRank('armor');
-            if (armorRank > 0) {
-                actualDmg -= armorRank;
-                // Nerfed: Minimum damage is 1
-                if (actualDmg < 1) actualDmg = 1;
+            const evasionRank = defender.getUpgradeRank('evasion');
+            if (evasionRank > 0) {
+                const chance = Math.min(0.5, evasionRank * 0.1);
+                if (Math.random() < chance) {
+                    this.ui.showMessage("DODGED!");
+                    this.ui.log("Player dodged attack!", 'info'); // Use 'info' or maybe a new color?
+                    // Play dodge sound?
+                    return; // No damage taken
+                }
             }
         }
 

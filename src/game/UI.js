@@ -199,7 +199,7 @@ class UI {
                 <h3>Stats</h3>
                 <div class="legend-row"><strong>❤️ Max HP</strong>: Increases health pool.</div>
                 <div class="legend-row"><strong>⚔️ Damage</strong>: Increases base hit damage.</div>
-                <div class="legend-row"><strong>🛡️ Armor</strong>: Reduces incoming damage.</div>
+                <div class="legend-row"><strong>👻 Evasion</strong>: Chance to dodge attacks (Max 50%).</div>
                 <div class="legend-row"><strong>🎯 Crit</strong>: Chance to deal triple damage.</div>
                 <div class="legend-row"><strong>😡 Bloodlust</strong>: +Damage when HP is low.</div>
                 <div class="legend-row"><strong>💥 Chain Reaction</strong>: Enemies explode on death.</div>
