@@ -614,7 +614,198 @@ class Game {
     endPlayerTurn() {
         this.state = 'ENEMY_TURN';
         this.ui.showMessage("Enemy Turn...");
+
+        // Clear Boss Telegraphs from previous turn
+        const telegraphs = document.querySelectorAll('.telegraph-charge, .telegraph-bomb');
+        telegraphs.forEach(el => el.remove());
+
         setTimeout(() => this.processEnemyTurn(), 300);
+    }
+
+    processBossTurn(boss) {
+        // Remove stunned status if it was applied
+        if (boss.element.classList.contains('stunned')) {
+            boss.element.classList.remove('stunned');
+            this.ui.showMessage("Boss Recovered!");
+            return; // Skip turn (recovering)
+        }
+
+        switch (boss.bossState) {
+            case 'IDLE':
+                // Decide next move: 50/50 Charge or Bomb
+                if (Math.random() < 0.5) {
+                    boss.bossState = 'PREP_CHARGE';
+                    this.ui.showMessage("Boss preparing CHARGE!");
+                    this.ui.log("Boss is aiming...", 'warning');
+
+                    // Determine Charge Direction (towards player)
+                    const dx = this.player.x - boss.x;
+                    const dy = this.player.y - boss.y;
+
+                    // Prefer axis with greater distance
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        boss.chargeDir = { x: Math.sign(dx), y: 0 };
+                    } else {
+                        boss.chargeDir = { x: 0, y: Math.sign(dy) };
+                    }
+
+                    // Show Telegraph
+                    this.showChargeTelegraph(boss);
+                } else {
+                    boss.bossState = 'PREP_BOMB';
+                    this.ui.showMessage("Boss preparing BOMB!");
+                    this.ui.log("Boss targets an area...", 'warning');
+
+                    // Target player's current position
+                    boss.bombTarget = { x: this.player.x, y: this.player.y };
+
+                    // Show Telegraph
+                    this.showBombTelegraph(boss.bombTarget);
+                }
+                break;
+
+            case 'PREP_CHARGE':
+                boss.bossState = 'CHARGE';
+                this.executeCharge(boss);
+                break;
+
+            case 'CHARGE':
+                // Should have executed in PREP_CHARGE -> CHARGE transition or be instant?
+                // Let's make it instant execution after prep.
+                // So this state might just be a transition to REST.
+                boss.bossState = 'REST';
+                break;
+
+            case 'PREP_BOMB':
+                boss.bossState = 'FUSE_BOMB';
+                this.ui.showMessage("Bomb ticking...");
+                this.ui.log("Bomb is about to explode!", 'warning');
+
+                // Re-render visuals because they were cleared
+                this.showBombTelegraph(boss.bombTarget);
+
+                // Update visuals to show fuse state
+                const indicators = document.querySelectorAll('.telegraph-bomb');
+                indicators.forEach(el => el.classList.add('fuse'));
+                break;
+
+            case 'FUSE_BOMB':
+                boss.bossState = 'BOMB';
+                this.executeBomb(boss);
+                break;
+
+            case 'BOMB':
+                boss.bossState = 'REST';
+                break;
+
+            case 'REST':
+                boss.bossState = 'IDLE';
+                this.ui.showMessage("Boss is resting...");
+                break;
+        }
+    }
+
+    showChargeTelegraph(boss) {
+        let cx = boss.x + boss.chargeDir.x;
+        let cy = boss.y + boss.chargeDir.y;
+
+        while (this.grid.isValid(cx, cy)) {
+            const cell = document.querySelector(`.cell[data-x="${cx}"][data-y="${cy}"]`);
+            if (cell) {
+                const indicator = document.createElement('div');
+                indicator.className = 'telegraph-charge';
+                indicator.style.width = '100%';
+                indicator.style.height = '100%';
+                cell.appendChild(indicator);
+            }
+            cx += boss.chargeDir.x;
+            cy += boss.chargeDir.y;
+        }
+    }
+
+    showBombTelegraph(target) {
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const tx = target.x + dx;
+                const ty = target.y + dy;
+                if (this.grid.isValid(tx, ty)) {
+                    const cell = document.querySelector(`.cell[data-x="${tx}"][data-y="${ty}"]`);
+                    if (cell) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'telegraph-bomb';
+                        indicator.style.width = '100%';
+                        indicator.style.height = '100%';
+                        cell.appendChild(indicator);
+                    }
+                }
+            }
+        }
+    }
+
+    executeCharge(boss) {
+        const dir = boss.chargeDir;
+        let cx = boss.x;
+        let cy = boss.y;
+        let hitWall = false;
+
+        // Move until hit something
+        while (true) {
+            const nx = cx + dir.x;
+            const ny = cy + dir.y;
+
+            if (!this.grid.isValid(nx, ny)) {
+                hitWall = true;
+                break;
+            }
+
+            // Check collision with player
+            if (nx === this.player.x && ny === this.player.y) {
+                this.ui.showMessage("TRAMPLED!");
+                const isDead = this.player.takeDamage(5); // Massive damage
+                this.ui.updateStats(this.player, this.level, this.score); // Update UI immediately
+                if (isDead) this.gameOver();
+                cx = nx;
+                cy = ny;
+                break; // Stop at player
+            }
+
+            cx = nx;
+            cy = ny;
+        }
+
+        // Move boss visually
+        boss.x = cx;
+        boss.y = cy;
+        boss.updateVisualPosition();
+
+        if (hitWall) {
+            this.ui.showMessage("Boss hit a wall! STUNNED!");
+            this.ui.log("Boss is stunned!", 'info');
+            boss.element.classList.add('stunned');
+            // Stun lasts for next turn
+        }
+
+        boss.bossState = 'REST';
+    }
+
+    executeBomb(boss) {
+        const target = boss.bombTarget;
+        this.sound.playExplosion(); // Reuse explosion sound?
+
+        // Check if player is in zone
+        const dx = Math.abs(this.player.x - target.x);
+        const dy = Math.abs(this.player.y - target.y);
+
+        if (dx <= 1 && dy <= 1) {
+            this.ui.showMessage("BOOM!");
+            const isDead = this.player.takeDamage(4);
+            this.ui.updateStats(this.player, this.level, this.score); // Update UI immediately
+            if (isDead) this.gameOver();
+        } else {
+            this.ui.showMessage("Missed!");
+        }
+
+        boss.bossState = 'REST';
     }
 
     processEnemyTurn() {
@@ -625,6 +816,12 @@ class Game {
 
             // Check if dead (could have died from thorns)
             if (enemy.hp <= 0) continue;
+
+            // Boss Logic
+            if (enemy.isMiniBoss || enemy.type === 'boss') {
+                this.processBossTurn(enemy);
+                continue;
+            }
 
             // Skeleton Logic (Shooting)
             if (enemy.type === 'skeleton') {

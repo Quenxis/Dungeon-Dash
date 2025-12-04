@@ -2,6 +2,12 @@ class Enemy extends Entity {
     constructor(x, y, type) {
         super(x, y, type);
         this.setupStats();
+
+        // Boss State
+        this.bossState = 'IDLE'; // IDLE, PREP_CHARGE, CHARGE, PREP_BOMB, BOMB, REST
+        this.bossTimer = 0;
+        this.chargeDir = null;
+        this.bombTarget = null;
     }
 
     setupStats() {

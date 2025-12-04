@@ -42,6 +42,12 @@ class SoundManager {
         this.playTone(50, 'sawtooth', 0.2);
     }
 
+    playExplosion() {
+        // Low pitch rumble
+        this.playTone(40, 'square', 0.3);
+        setTimeout(() => this.playTone(30, 'sawtooth', 0.3), 100);
+    }
+
     playLevelComplete() {
         // Arpeggio
         setTimeout(() => this.playTone(400, 'sine', 0.1), 0);
