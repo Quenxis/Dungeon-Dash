@@ -73,27 +73,30 @@ class Game {
 
             const el = document.createElement('div');
             el.className = 'entity potion';
-            el.textContent = '🍷';
+            el.dataset.x = px;
+            el.dataset.y = py;
+            el.textContent = '❤️';
             el.style.left = (px * 60) + 'px';
             el.style.top = (py * 60) + 'px';
-            // Center the emoji
-            el.style.width = '60px';
-            el.style.height = '60px';
-            el.style.display = 'flex';
-            el.style.justifyContent = 'center';
-            el.style.alignItems = 'center';
-            el.style.fontSize = '30px';
+
 
             document.getElementById('game-container').appendChild(el);
             potion.element = el;
         }
 
-        // Boss Levels (10, 20) & Mini-Boss Levels (5, 15)
-        if (this.level === 10 || this.level === 20) {
+        // Boss Levels (16) & Mini-Boss Levels (8)
+        const objDisplay = document.getElementById('objective-display');
+        if (this.level === 16) {
             this.spawnBoss();
-        } else if (this.level === 5 || this.level === 15) {
+            if (objDisplay) objDisplay.textContent = "Objective: DEFEAT THE WARLORD";
+            if (objDisplay) objDisplay.style.color = "#ff4444";
+        } else if (this.level === 8) {
             this.spawnMiniBoss();
+            if (objDisplay) objDisplay.textContent = "Objective: DEFEAT THE ELITE ORC";
+            if (objDisplay) objDisplay.style.color = "#ffaa00";
         } else {
+            if (objDisplay) objDisplay.textContent = `Objective: Reach the Exit (Level ${this.level})`;
+            if (objDisplay) objDisplay.style.color = "#ffffff";
             // Enemies
             // Smoother scaling:
             // Lvl 1-2: 2
@@ -125,8 +128,8 @@ class Game {
             (x === this.grid.exitPos.x && y === this.grid.exitPos.y)
         );
 
-        // Level 5: Elite Orc, Level 15: Elite Skeleton
-        const type = this.level === 5 ? 'orc' : 'skeleton';
+        // Level 8: Elite Orc (Charger)
+        const type = 'orc';
         const miniBoss = new Enemy(x, y, type);
 
         // Boost Stats
@@ -162,12 +165,12 @@ class Game {
 
         const boss = new Enemy(x, y, 'boss');
         // Buff boss based on level
-        if (this.level === 20) {
-            boss.hp = 50; // Buffed from 40
+        if (this.level === 16) {
+            boss.hp = 50; // Final Boss
             boss.damage = 5;
         } else {
-            // Level 10 boss
-            boss.hp = 25; // Buffed from 20
+            // Level 8 boss
+            boss.hp = 25;
         }
         boss.maxHp = boss.hp; // Sync maxHp
 
@@ -212,8 +215,8 @@ class Game {
         const enemy = new Enemy(x, y, type);
 
         // Scaling
-        // Harder scaling: every 3 levels instead of 5
-        const tier = Math.floor(this.level / 3);
+        // Balanced: Scale every 4 levels
+        const tier = Math.floor(this.level / 4);
         enemy.hp += tier;
         enemy.damage += Math.floor(tier / 2);
         enemy.maxHp = enemy.hp; // Sync maxHp
@@ -282,11 +285,15 @@ class Game {
         });
 
         // Grid clicks
-        this.grid.container.addEventListener('click', (e) => {
-            const cell = e.target.closest('.cell');
-            if (!cell) return;
-            const x = parseInt(cell.dataset.x);
-            const y = parseInt(cell.dataset.y);
+        document.getElementById('game-container').addEventListener('click', (e) => {
+            let target = e.target.closest('.cell');
+            if (!target) target = e.target.closest('.entity');
+            if (!target) target = e.target.closest('.potion');
+
+            if (!target) return;
+
+            const x = parseInt(target.dataset.x);
+            const y = parseInt(target.dataset.y);
 
             if (this.state === 'PLAYER_TURN') {
                 this.handlePlayerInput(x, y);
@@ -296,17 +303,28 @@ class Game {
         });
 
         // Hover effects
-        this.grid.container.addEventListener('mousemove', (e) => {
-            if (this.state !== 'PLAYER_TURN' && this.state !== 'TARGETING') return;
+        document.getElementById('game-container').addEventListener('mousemove', (e) => {
+            // Always clear previous highlights first
+            this.grid.clearHighlights();
+            this.ui.hideTooltip();
+            this.clearThreatRange();
 
-            // Only clear if not in targeting mode (or handle targeting highlights differently)
-            if (this.state === 'PLAYER_TURN') this.grid.clearHighlights();
+            let cell = e.target.closest('.cell');
+            if (!cell) cell = e.target.closest('.entity');
+            if (!cell) cell = e.target.closest('.potion');
 
-            const cell = e.target.closest('.cell');
             if (!cell) return;
 
             const x = parseInt(cell.dataset.x);
             const y = parseInt(cell.dataset.y);
+
+            // UX: Tooltip & Threat Range (Check entity at cell)
+            const entity = this.grid.getEntityAt(x, y);
+            if (entity && entity.type !== 'player') {
+                const desc = this.getEnemyDescription(entity);
+                this.ui.showTooltip(desc);
+                this.showThreatRange(entity);
+            }
 
             if (this.state === 'PLAYER_TURN') {
                 if (this.isAdjacent(this.player.x, this.player.y, x, y)) {
@@ -356,6 +374,18 @@ class Game {
             if (cheby <= 2 && !this.grid.isOccupied(x, y) && this.grid.isValid(x, y)) {
                 this.player.setPosition(x, y);
                 this.sound.playMove();
+
+                // Check Potion (Fix: Dash should pickup potions)
+                const potionIndex = this.potions.findIndex(p => p.x === x && p.y === y);
+                if (potionIndex !== -1) {
+                    const potion = this.potions[potionIndex];
+                    this.player.heal(3);
+                    this.ui.showMessage("Consumed Potion! (+3 HP)");
+                    this.ui.log("Player consumed Potion (+3 HP)", 'heal');
+                    if (potion.element) potion.element.remove();
+                    this.potions.splice(potionIndex, 1);
+                    this.ui.updateStats(this.player, this.level, this.score);
+                }
 
                 // Check exit (Dash specific)
                 if (x === this.grid.exitPos.x && y === this.grid.exitPos.y) {
@@ -1076,26 +1106,22 @@ class Game {
     levelComplete() {
         this.score += 10;
 
-        // Check for Boss/Mini-Boss Victory (Levels 5, 10, 15, 20)
-        // Note: level is incremented AFTER this check in original logic, but we want to check the level we just finished.
-        // Actually, level is incremented at start of this function in original code.
-        // Let's adjust: increment level at the end or check (level - 1)?
-        // Original: this.level++; then check > 20.
-        // So if we just finished level 5, level is now 6.
-        // Let's check (this.level - 1) or move increment.
-
-        // Better: Check before incrementing.
+        // Check for Boss/Mini-Boss Victory (Levels 8, 16)
         const finishedLevel = this.level;
         this.level++;
         this.sound.playLevelComplete();
 
-        if (finishedLevel === 20) {
+        // Heal player slightly on level up (Balance Buff)
+        this.player.heal(3);
+        this.ui.showMessage("Level Complete! (+3 HP)");
+
+        if (finishedLevel === 16) {
             this.victory();
             return;
         }
 
         // Rewards for Boss/Mini-Boss
-        if (finishedLevel === 5 || finishedLevel === 10 || finishedLevel === 15) {
+        if (finishedLevel === 8 || finishedLevel === 16) {
             this.player.heal(100); // Full Heal
             this.pendingUpgrades = 2; // Double Upgrade
             this.ui.showMessage("BOSS DEFEATED! Full Heal + 2 Upgrades!");
@@ -1282,5 +1308,84 @@ class Game {
 
         this.ui.updateStats(this.player, this.level, this.score);
         console.log(`Spawned Level ${level} Boss!`);
+    }
+
+    getEnemyDescription(enemy) {
+        let name = enemy.type.charAt(0).toUpperCase() + enemy.type.slice(1);
+        if (enemy.isMiniBoss) name = "Elite " + name;
+
+        let desc = `**${name}**\nHP: ${enemy.hp}/${enemy.maxHp}\nDmg: ${enemy.damage}\n`;
+
+        switch (enemy.type) {
+            case 'goblin': desc += "Weak. Moves 1 tile."; break;
+            case 'skeleton': desc += "Sniper. Shoots in straight lines."; break;
+            case 'orc': desc += "Warrior. Moves diagonally too."; break;
+            case 'cultist': desc += "Mage. Shoots diagonally."; break;
+            case 'slime': desc += "Tank. High HP, blocks path."; break;
+            case 'boss': desc += "THE WARLORD. Watch out!"; break;
+        }
+        return desc;
+    }
+
+    showThreatRange(enemy) {
+        // Highlight tiles that the enemy threatens
+        let threatenedTiles = [];
+
+        if (enemy.type === 'skeleton') {
+            // Lines
+            for (let d of [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }]) {
+                let tx = enemy.x + d.x;
+                let ty = enemy.y + d.y;
+                while (this.grid.isValid(tx, ty)) {
+                    threatenedTiles.push({ x: tx, y: ty });
+                    tx += d.x;
+                    ty += d.y;
+                }
+            }
+        } else if (enemy.type === 'cultist') {
+            // Diagonals
+            for (let d of [{ x: 1, y: 1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: -1, y: -1 }]) {
+                let tx = enemy.x + d.x;
+                let ty = enemy.y + d.y;
+                while (this.grid.isValid(tx, ty)) {
+                    threatenedTiles.push({ x: tx, y: ty });
+                    tx += d.x;
+                    ty += d.y;
+                }
+            }
+        } else if (enemy.type === 'goblin') {
+            // Cardinal only
+            const dirs = [{ x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }];
+            dirs.forEach(d => {
+                const tx = enemy.x + d.x;
+                const ty = enemy.y + d.y;
+                if (this.grid.isValid(tx, ty)) threatenedTiles.push({ x: tx, y: ty });
+            });
+        } else if (enemy.type === 'slime') {
+            // No attack threat
+        } else {
+            // Orc, Boss (8 neighbors)
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const tx = enemy.x + dx;
+                    const ty = enemy.y + dy;
+                    if (this.grid.isValid(tx, ty)) {
+                        threatenedTiles.push({ x: tx, y: ty });
+                    }
+                }
+            }
+        }
+
+        threatenedTiles.forEach(pos => {
+            const cell = document.querySelector(`.cell[data-x="${pos.x}"][data-y="${pos.y}"]`);
+            if (cell) {
+                cell.classList.add('threat-zone');
+            }
+        });
+    }
+
+    clearThreatRange() {
+        document.querySelectorAll('.threat-zone').forEach(el => el.classList.remove('threat-zone'));
     }
 }

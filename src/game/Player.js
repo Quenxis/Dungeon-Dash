@@ -1,8 +1,8 @@
 class Player extends Entity {
     constructor(x, y) {
         super(x, y, 'player');
-        this.hp = 8;
-        this.maxHp = 8;
+        this.hp = 12;
+        this.maxHp = 12;
         this.damage = 1;
         this.upgrades = [];
         this.abilities = [

@@ -108,203 +108,22 @@ body {
     height: 40px;
     position: absolute;
     transition: all 0.2s ease-in-out;
-    pointer-events: none;
+    pointer-events: auto;
     /* Let clicks pass through to cell */
 }
 
-.player {
-    background-color: var(--player-color);
-    border-radius: 50%;
-    box-shadow: 0 0 10px var(--player-color);
-    z-index: 10;
-}
-
-.player::after {
-    content: '';
+.potion {
+    width: 60px;
+    height: 60px;
+    background-color: transparent;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    background-color: white;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.enemy {
-    background-color: var(--enemy-color);
-    z-index: 5;
-}
-
-.goblin {
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-    /* Triangle */
-    width: 30px;
-    height: 30px;
-}
-
-.skeleton {
-    width: 30px;
-    height: 30px;
-    /* Square */
-}
-
-.orc {
-    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-    /* Pentagon */
-    width: 35px;
-    height: 35px;
-}
-
-.cultist {
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    /* Diamond */
-    background-color: #9b59b6;
-    /* Purple */
-    width: 30px;
-    height: 30px;
-}
-
-.slime {
-    border-radius: 30%;
-    /* Soft square */
-    background-color: #2ecc71;
-    /* Green */
-    width: 35px;
-    height: 35px;
-    opacity: 0.8;
-}
-
-.boss {
-    width: 50px;
-    height: 50px;
-    background-color: #f1c40f;
-    /* Gold */
-    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-    /* Star */
-    box-shadow: 0 0 15px #f1c40f;
-    z-index: 20;
-}
-
-.exit {
-    background-color: var(--exit-color);
-    width: 100%;
-    height: 100%;
+    pointer-events: auto;
+    z-index: 8;
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0.7;
-}
-
-.exit::after {
-    content: '🚪';
     font-size: 24px;
-}
-
-/* Overlay */
-#overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    flex-direction: column;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.upgrade-card {
-    background-color: #2a2a4e;
-    border: 2px solid var(--grid-line);
-    padding: 15px;
-    margin: 10px;
-    cursor: pointer;
-    width: 120px;
-    text-align: center;
-    border-radius: 8px;
-    transition: transform 0.2s;
-}
-
-.upgrade-card:hover {
-    transform: scale(1.05);
-    border-color: var(--player-color);
-}
-
-.btn {
-    padding: 10px 20px;
-    background-color: var(--player-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin-top: 20px;
-}
-
-.btn:hover {
-    background-color: #16669e;
-}
-
-.legend-row {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    font-size: 0.9rem;
-}
-
-.legend-icon {
-    position: relative;
-    margin-right: 15px;
-    flex-shrink: 0;
-}
-
-/* Tooltip */
-.tooltip {
-    position: absolute;
-    background-color: rgba(20, 20, 30, 0.95);
-    border: 1px solid #444;
-    color: #eee;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    pointer-events: none;
-    z-index: 1000;
-    max-width: 200px;
-    align-items: center;
-    cursor: pointer;
-    position: relative;
-    transition: background-color 0.1s;
-}
-
-.cell:hover {
-    background-color: #2a2a4e;
-}
-
-.cell.valid-move:hover {
-    background-color: rgba(59, 255, 133, 0.2);
-    /* Green tint */
-}
-
-.cell.attack-target:hover {
-    background-color: rgba(233, 69, 96, 0.3);
-    /* Red tint */
-}
-
-/* Entities */
-.entity {
-    width: 40px;
-    height: 40px;
-    position: absolute;
-    transition: all 0.2s ease-in-out;
-    pointer-events: none;
-    /* Let clicks pass through to cell */
+    filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5));
 }
 
 .player {
@@ -495,4 +314,29 @@ body {
 .stunned {
     filter: grayscale(100%) brightness(0.5);
     transform: scale(0.9);
+}
+
+/* Threat Range Indicator */
+.threat-zone {
+    background-color: rgba(255, 0, 0, 0.2) !important;
+    box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.4);
+}
+
+/* Objective Display */
+#objective-display {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: 1px solid #444;
+    z-index: 100;
+    pointer-events: none;
+    text-shadow: 0 0 5px black;
 }

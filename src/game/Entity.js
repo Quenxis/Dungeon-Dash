@@ -47,6 +47,10 @@ class Entity {
 
             this.element.style.left = `${this.x * 62 + offset}px`;
             this.element.style.top = `${this.y * 62 + offset}px`;
+
+            // Store coordinates for click handling
+            this.element.dataset.x = this.x;
+            this.element.dataset.y = this.y;
         }
     }
 
