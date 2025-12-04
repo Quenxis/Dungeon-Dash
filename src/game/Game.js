@@ -630,6 +630,14 @@ class Game {
             return; // Skip turn (recovering)
         }
 
+        if (boss.isMiniBoss) {
+            this.processChargerLogic(boss);
+        } else if (boss.type === 'boss') {
+            this.processWarlordLogic(boss);
+        }
+    }
+
+    processChargerLogic(boss) {
         switch (boss.bossState) {
             case 'IDLE':
                 // Decide next move: 50/50 Charge or Bomb
@@ -670,9 +678,6 @@ class Game {
                 break;
 
             case 'CHARGE':
-                // Should have executed in PREP_CHARGE -> CHARGE transition or be instant?
-                // Let's make it instant execution after prep.
-                // So this state might just be a transition to REST.
                 boss.bossState = 'REST';
                 break;
 
@@ -701,6 +706,67 @@ class Game {
             case 'REST':
                 boss.bossState = 'IDLE';
                 this.ui.showMessage("Boss is resting...");
+                break;
+        }
+    }
+
+    processWarlordLogic(boss) {
+        // Cycle: CROSS -> REST -> X -> REST -> NOVA -> REST
+        if (typeof boss.patternIndex === 'undefined') boss.patternIndex = 0;
+        const patterns = ['CROSS', 'REST', 'X', 'SUMMON', 'NOVA', 'REST'];
+        const currentPattern = patterns[boss.patternIndex];
+
+        switch (boss.bossState) {
+            case 'IDLE':
+                // Start the pattern
+                boss.bossState = 'PREP_' + currentPattern;
+
+                if (currentPattern === 'CROSS') {
+                    this.ui.showMessage("Boss prepares CROSS BLAST!");
+                    this.showCrossTelegraph(boss);
+                } else if (currentPattern === 'X') {
+                    this.ui.showMessage("Boss prepares X-SLASH!");
+                    this.showXTelegraph(boss);
+                } else if (currentPattern === 'NOVA') {
+                    this.ui.showMessage("Boss prepares NOVA!");
+                    this.showNovaTelegraph(boss);
+                } else if (currentPattern === 'SUMMON') {
+                    this.ui.showMessage("Boss is SUMMONING!");
+                    this.ui.log("Boss calls for reinforcements!", 'warning');
+                    boss.bossState = 'PREP_SUMMON';
+                } else if (currentPattern === 'REST') {
+                    this.ui.showMessage("Boss is resting...");
+                    boss.bossState = 'REST_TURN'; // Special state to just wait
+                }
+                break;
+
+            case 'PREP_CROSS':
+                this.executePatternDamage(boss, 'CROSS');
+                boss.bossState = 'IDLE';
+                boss.patternIndex = (boss.patternIndex + 1) % patterns.length;
+                break;
+
+            case 'PREP_X':
+                this.executePatternDamage(boss, 'X');
+                boss.bossState = 'IDLE';
+                boss.patternIndex = (boss.patternIndex + 1) % patterns.length;
+                break;
+
+            case 'PREP_NOVA':
+                this.executePatternDamage(boss, 'NOVA');
+                boss.bossState = 'IDLE';
+                boss.patternIndex = (boss.patternIndex + 1) % patterns.length;
+                break;
+
+            case 'PREP_SUMMON':
+                this.summonMinions(boss);
+                boss.bossState = 'IDLE';
+                boss.patternIndex = (boss.patternIndex + 1) % patterns.length;
+                break;
+
+            case 'REST_TURN':
+                boss.bossState = 'IDLE';
+                boss.patternIndex = (boss.patternIndex + 1) % patterns.length;
                 break;
         }
     }
@@ -806,6 +872,115 @@ class Game {
         }
 
         boss.bossState = 'REST';
+    }
+
+    showCrossTelegraph(boss) {
+        // Row
+        for (let x = 0; x < this.grid.width; x++) {
+            this.addTelegraph(x, boss.y);
+        }
+        // Column
+        for (let y = 0; y < this.grid.height; y++) {
+            this.addTelegraph(boss.x, y);
+        }
+    }
+
+    showXTelegraph(boss) {
+        // Diagonals
+        for (let x = 0; x < this.grid.width; x++) {
+            for (let y = 0; y < this.grid.height; y++) {
+                const dx = Math.abs(x - boss.x);
+                const dy = Math.abs(y - boss.y);
+                if (dx === dy && dx > 0) {
+                    this.addTelegraph(x, y);
+                }
+            }
+        }
+    }
+
+    showNovaTelegraph(boss) {
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                this.addTelegraph(boss.x + dx, boss.y + dy);
+            }
+        }
+    }
+
+    addTelegraph(x, y) {
+        if (this.grid.isValid(x, y)) {
+            const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+            if (cell) {
+                const indicator = document.createElement('div');
+                indicator.className = 'telegraph-bomb'; // Reuse red zone style
+                indicator.style.width = '100%';
+                indicator.style.height = '100%';
+                cell.appendChild(indicator);
+            }
+        }
+    }
+
+    executePatternDamage(boss, pattern) {
+        this.sound.playExplosion(); // Sound effect
+        let hit = false;
+        const px = this.player.x;
+        const py = this.player.y;
+        const bx = boss.x;
+        const by = boss.y;
+
+        if (pattern === 'CROSS') {
+            if (px === bx || py === by) hit = true;
+        } else if (pattern === 'X') {
+            if (Math.abs(px - bx) === Math.abs(py - by)) hit = true;
+        } else if (pattern === 'NOVA') {
+            if (Math.abs(px - bx) <= 1 && Math.abs(py - by) <= 1) hit = true;
+        }
+
+        if (hit) {
+            this.ui.showMessage("HIT BY " + pattern + "!");
+            const isDead = this.player.takeDamage(3); // 3 damage for patterns
+            this.ui.updateStats(this.player, this.level, this.score);
+            if (isDead) this.gameOver();
+        } else {
+            this.ui.showMessage("Dodged " + pattern + "!");
+        }
+    }
+
+    summonMinions(boss) {
+        // Cap minions to prevent overcrowding
+        const minionCount = this.enemies.filter(e => e.type === 'skeleton').length;
+        if (minionCount >= 3) {
+            this.ui.showMessage("Minions are already here!");
+            return;
+        }
+
+        this.ui.showMessage("RISE, MINIONS!");
+        // Spawn 2 Skeletons (or less if near cap)
+        const toSpawn = Math.min(2, 3 - minionCount);
+
+        for (let i = 0; i < toSpawn; i++) {
+            let x, y;
+            let attempts = 0;
+            do {
+                x = Math.floor(Math.random() * 7);
+                y = Math.floor(Math.random() * 7);
+                attempts++;
+            } while (
+                (this.grid.isOccupied(x, y) || (x === this.player.x && y === this.player.y)) &&
+                attempts < 20
+            );
+
+            if (attempts < 20) {
+                const skeleton = new Enemy(x, y, 'skeleton');
+                this.enemies.push(skeleton);
+                this.addEntityToDOM(skeleton);
+
+                // Visual spawn effect?
+                skeleton.element.style.animation = 'spawn-pulse 0.5s';
+            }
+        }
+        // Update grid entities
+        this.grid.entities = [this.player, ...this.enemies];
     }
 
     processEnemyTurn() {
@@ -1092,5 +1267,20 @@ class Game {
                 }
             }
         }
+    }
+    debugSpawnBoss(level) {
+        this.level = level;
+        // Clear existing enemies
+        this.enemies.forEach(e => {
+            if (e.element) e.element.remove();
+        });
+        this.enemies = [];
+
+        this.spawnBoss();
+        // CRITICAL: Update grid entities so collision works!
+        this.grid.entities = [this.player, ...this.enemies];
+
+        this.ui.updateStats(this.player, this.level, this.score);
+        console.log(`Spawned Level ${level} Boss!`);
     }
 }
