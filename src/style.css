@@ -1,0 +1,253 @@
+:root {
+    --bg-color: #1a1a2e;
+    --grid-line: #16213e;
+    --player-color: #0f4c75;
+    --enemy-color: #e94560;
+    --exit-color: #3bff85;
+    --text-color: #ffffff;
+    --hp-bg: #333333;
+    --hp-fill: #ff4444;
+    --grid-size: 60px;
+    --gap-size: 2px;
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: auto;
+    max-width: 100%;
+}
+
+.ui-bar {
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+#ui-bottom {
+    height: 40px;
+    margin-top: 10px;
+    font-size: 1rem;
+    color: #aaaaaa;
+}
+
+#game-container {
+    position: relative;
+    width: 434px;
+    /* 7 * 60 + 6 * 2 + border? Let's use grid gap */
+    height: 434px;
+    background-color: var(--grid-line);
+    border: 2px solid var(--grid-line);
+    border-radius: 4px;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(7, var(--grid-size));
+    grid-template-rows: repeat(7, var(--grid-size));
+    gap: var(--gap-size);
+    background-color: var(--grid-line);
+}
+
+.cell {
+    width: var(--grid-size);
+    height: var(--grid-size);
+    background-color: #232342;
+    /* Slightly lighter than bg */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.1s;
+}
+
+.cell:hover {
+    background-color: #2a2a4e;
+}
+
+.cell.valid-move:hover {
+    background-color: rgba(59, 255, 133, 0.2);
+    /* Green tint */
+}
+
+.cell.attack-target:hover {
+    background-color: rgba(233, 69, 96, 0.3);
+    /* Red tint */
+}
+
+/* Entities */
+.entity {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    transition: all 0.2s ease-in-out;
+    pointer-events: none;
+    /* Let clicks pass through to cell */
+}
+
+.player {
+    background-color: var(--player-color);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--player-color);
+    z-index: 10;
+}
+
+.player::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.enemy {
+    background-color: var(--enemy-color);
+    z-index: 5;
+}
+
+.goblin {
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    /* Triangle */
+    width: 30px;
+    height: 30px;
+}
+
+.skeleton {
+    width: 30px;
+    height: 30px;
+    /* Square */
+}
+
+.orc {
+    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+    /* Pentagon */
+    width: 35px;
+    height: 35px;
+}
+
+.cultist {
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    /* Diamond */
+    background-color: #9b59b6;
+    /* Purple */
+    width: 30px;
+    height: 30px;
+}
+
+.slime {
+    border-radius: 30%;
+    /* Soft square */
+    background-color: #2ecc71;
+    /* Green */
+    width: 35px;
+    height: 35px;
+    opacity: 0.8;
+}
+
+.boss {
+    width: 50px;
+    height: 50px;
+    background-color: #f1c40f;
+    /* Gold */
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    /* Star */
+    box-shadow: 0 0 15px #f1c40f;
+    z-index: 20;
+}
+
+.exit {
+    background-color: var(--exit-color);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.7;
+}
+
+.exit::after {
+    content: '🚪';
+    font-size: 24px;
+}
+
+/* Overlay */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.upgrade-card {
+    background-color: #2a2a4e;
+    border: 2px solid var(--grid-line);
+    padding: 15px;
+    margin: 10px;
+    cursor: pointer;
+    width: 120px;
+    text-align: center;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.upgrade-card:hover {
+    transform: scale(1.05);
+    border-color: var(--player-color);
+}
+
+.btn {
+    padding: 10px 20px;
+    background-color: var(--player-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.btn:hover {
+    background-color: #16669e;
+}
